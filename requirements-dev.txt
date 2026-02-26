@@ -1,0 +1,7 @@
+pytest==8.4.1
+pytest-asyncio==1.1.0
+python-dotenv==1.0.1
+coverage==7.4.4
+testcontainers[postgres]==4.12.0
+psycopg2-binary==2.9.10
+httpx==0.27.0

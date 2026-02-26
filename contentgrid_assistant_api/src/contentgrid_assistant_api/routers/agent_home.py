@@ -1,0 +1,39 @@
+from fastapi import APIRouter, FastAPI
+import os
+from fastapi.concurrency import asynccontextmanager
+from contentgrid_assistant_api.config import DatabaseConfig, AssistantExtensionConfig
+from contentgrid_assistant_api.dependencies import DependencyResolver
+from contentgrid_assistant_api.routers.thread_router import generate_agent_thread_router
+from contentgrid_assistant_api.types.agents import Agent, AgentHomeResponse, AgentToolCollectionResponse, AgentToolResponse
+
+def exit_uvicorn():
+    import signal
+    # Send interrupt signal (Ctrl+C equivalent) to uvicorn (parent process)
+    # This is a bit of a janky way to "gracefully crash" the process, but it should suffice for now.
+    os.kill(os.getppid(), signal.SIGINT)
+
+
+def generate_agent_home_router(agent : Agent, extension_config: AssistantExtensionConfig) -> APIRouter:
+    dep_resolver = DependencyResolver(agent=agent, db_config=DatabaseConfig(pg_dbname=agent.name))
+    
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Lifespan of the fast API router. Code before the yield is executed when the application starts
+        # and code after the yield is executed when the application stops.
+        dep_resolver.db_conn_factory.create_db_and_tables()
+        yield
+        # Clean up the ML models and release the resources
+        # dep_resolver.db_conn_factory.wipe_database()
+        
+    router = APIRouter(lifespan=lifespan, tags=[agent.name])
+    router.include_router(generate_agent_thread_router(dep_resolver, extension_config, tags=[agent.name]))
+    
+    @router.get("/", response_model=AgentHomeResponse, response_model_exclude_unset=True)
+    def get_agent_home():
+        return AgentHomeResponse(**agent.model_dump(), tags=[agent.name])
+    
+    @router.get("/tools", response_model=AgentToolCollectionResponse, response_model_exclude_unset=True)
+    def get_agent_tools():
+        return AgentToolCollectionResponse(_embedded={"tools": [AgentToolResponse(**tool.model_dump()) for tool in agent.tools]}, tags=[agent.name])
+
+    return router
