@@ -1,5 +1,6 @@
 /output
 **/.env.secret
+
 _version.txt
 .vscode
 testbook.ipynb
@@ -11,6 +12,9 @@ temp.txt
 __pycache__/
 *.py[cod]
 *$py.class
+
+# SQLITE dbs
+*.db
 
 # C extensions
 *.so
