@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build and test python library
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        libs:
+          - name: contentgrid_assistant_api
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+
+    - name: Upgrade pip
+      run: python -m pip install --upgrade pip
+
+    - name: Install build dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Install build dependencies
+      run: |
+        pip install -r requirements-dev.txt
+
+    - name: Install dependencies for ${{ matrix.libs.name }}
+      working-directory: ${{ matrix.libs.name }}
+      run: pip install -r requirements.txt
+
+    - name: Build and install ${{ matrix.libs.name }}
+      working-directory: ${{ matrix.libs.name }}
+      run: |
+        python -m build
+        pip install .
+
+    - name: Run tests
+      env:
+        USE_SQLITE_DB: t
+      run: python -m pytest
