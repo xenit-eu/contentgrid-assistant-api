@@ -29,18 +29,13 @@ jobs:
       run: |
         pip install -r requirements.txt
 
-    - name: Install build dependencies
+    - name: Install dev dependencies
       run: |
         pip install -r requirements-dev.txt
-
-    - name: Install dependencies for ${{ matrix.libs.name }}
-      working-directory: ${{ matrix.libs.name }}
-      run: pip install -r requirements.txt
 
     - name: Build and install ${{ matrix.libs.name }}
       working-directory: ${{ matrix.libs.name }}
       run: |
-        python -m build
         pip install .
 
     - name: Run tests
