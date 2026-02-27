@@ -1,5 +1,5 @@
 
-from typing import List
+from typing import List, Optional
 import uuid
 from pydantic import HttpUrl
 from sqlmodel import Session, select
@@ -15,11 +15,11 @@ class ThreadRepository(BaseRepository[Thread, ThreadCreate, ThreadUpdate]):
     def __init__(self, session: Session):
         super().__init__(session, Thread)
     
-    def create(self, user: ContentGridUser, origin : HttpUrl, component : str, thread_id : uuid.UUID | None = None) -> Thread:
+    def create(self, user: ContentGridUser, origin : Optional[HttpUrl], component : str, thread_id : uuid.UUID | None = None) -> Thread:
         """Create a new thread, associating it with the user"""
         thread_params = {
             "name" : "New Thread",
-            "origin" : origin.encoded_string() if origin else "",
+            "origin" : origin.encoded_string() if origin else None,
             "component" : component,
             "user_sub" : user.sub
         }
