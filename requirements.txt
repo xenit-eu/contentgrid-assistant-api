@@ -2,9 +2,3 @@ setuptools==68.0.0
 wheel==0.38.4
 build==1.2.1
 setuptools_scm==8.1.0
-pytest==7.4.0
-python-dotenv==1.0.1
-coverage==7.4.4
-pydantic-settings==2.10.1
-sqlmodel==0.0.24
-uvicorn==0.35.0
