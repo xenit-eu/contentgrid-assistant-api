@@ -16,12 +16,11 @@ class AssistantExtensionConfig(BaseSettings):
     server_port: int | None = 8000
     server_url: str | None = Field("http://localhost:8000", serialization_alias="BACKEND_URL")
     web_concurrency: int | None = 1
-    opening_message : str = "Hello my name is John Doe. Can you order me two keyboards ? "
+    opening_message : str = "Hello, please introduce yourself and list your available tools and functionalities."
     graph_recursion_limit: int = 100
     
     assistant_name : str = "default"
     mock_oidc : bool = False
-    oidc_issuer : str = "https://oidc.example.com"
     
     extension_path_prefix : str | None = None
 
@@ -29,7 +28,7 @@ class AssistantExtensionConfig(BaseSettings):
     routes_thread_prefix : str = "/threads"
     routes_message_prefix : str = "/messages"
     
-    problem_type_base_url : str = "https://api.contentgrid.com/problems/ml/console-assistant"
+    problem_type_base_url : str = "https://api.contentgrid.com/problems/ml"
 
 class DatabaseConfig(BaseSettings):
     pg_dbname: str = "assistant"
