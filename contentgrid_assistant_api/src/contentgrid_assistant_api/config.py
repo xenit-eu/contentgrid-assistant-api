@@ -18,10 +18,7 @@ class AssistantExtensionConfig(BaseSettings):
     web_concurrency: int | None = 1
     opening_message : str = "Hello, please introduce yourself and list your available tools and functionalities."
     graph_recursion_limit: int = 100
-    
-    assistant_name : str = "default"
-    mock_oidc : bool = False
-    
+        
     extension_path_prefix : str | None = None
 
     routes_assistant_prefix : str = "/assistant"

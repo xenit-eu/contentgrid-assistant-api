@@ -111,13 +111,8 @@ PG_PORT=5432
 USE_SQLITE_DB=false
 
 # Assistant Configuration
-ASSISTANT_NAME=default
 GRAPH_RECURSION_LIMIT=100
 OPENING_MESSAGE="Hello! How can I help you today?"
-
-# Authentication
-MOCK_OIDC=false
-OIDC_ISSUER=https://oidc.example.com
 
 # Path Configuration
 EXTENSION_PATH_PREFIX=/api

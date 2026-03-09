@@ -13,17 +13,23 @@ def exit_uvicorn():
     os.kill(os.getppid(), signal.SIGINT)
 
 
-def generate_agent_home_router(agent : Agent, extension_config: AssistantExtensionConfig) -> APIRouter:
-    dep_resolver = DependencyResolver(agent=agent, db_config=DatabaseConfig(pg_dbname=agent.name))
+def generate_agent_home_router(agent : Agent, extension_config: AssistantExtensionConfig, database_config: DatabaseConfig) -> APIRouter:
+    if database_config.pg_dbname == database_config.__class__.model_fields["pg_dbname"].default:
+        # Check if the pg_dbname is still the default, if yes use the agent name
+        database_config.pg_dbname = agent.name
+        
+    dep_resolver = DependencyResolver(agent=agent, db_config=database_config)
     
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        if database_config.pg_reinitialize:
+            # Clean up the threads and wipe the database
+            dep_resolver.db_conn_factory.wipe_database()
         # Lifespan of the fast API router. Code before the yield is executed when the application starts
         # and code after the yield is executed when the application stops.
         dep_resolver.db_conn_factory.create_db_and_tables()
         yield
-        # Clean up the ML models and release the resources
-        # dep_resolver.db_conn_factory.wipe_database()
+        
         
     router = APIRouter(lifespan=lifespan, tags=[agent.name])
     router.include_router(generate_agent_thread_router(dep_resolver, extension_config, tags=[agent.name]))
