@@ -121,8 +121,6 @@ class TestThreadAccessControl:
         thread = response.json()
         assert "id" in thread
         assert thread["name"] == "New Thread"
-        
-        return thread["id"]
     
     def test_user_can_list_own_threads(self, client, current_user_store):
         """Test that a user can list their own threads"""

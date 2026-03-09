@@ -1,16 +1,13 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, ConfigDict
 from pydantic import computed_field
 import logging
 import urllib
 
 class AssistantExtensionConfig(BaseSettings):
-    production : bool = False
+    model_config = ConfigDict(extra="allow", env_file=[".env", ".env.secret"], env_file_encoding="utf-8")
     
-    class Config:
-        extra = "allow"
-        env_file = [".env", ".env.secret"]
-        env_file_encoding = "utf-8"
+    production : bool = False
         
     
     server_port: int | None = 8000
@@ -28,6 +25,8 @@ class AssistantExtensionConfig(BaseSettings):
     problem_type_base_url : str = "https://api.contentgrid.com/problems/ml"
 
 class DatabaseConfig(BaseSettings):
+    model_config = ConfigDict(extra="allow", env_file=[".env", ".env.secret"], env_file_encoding="utf-8")
+    
     pg_dbname: str = "assistant"
     pg_user: str = "assistant"
     pg_passwd: str = "assistant"
@@ -35,11 +34,6 @@ class DatabaseConfig(BaseSettings):
     pg_port: str = "5432"
     pg_reinitialize: bool = False
     use_sqlite_db: bool = False
-    
-    class Config:
-        extra = "allow"
-        env_file = [".env", ".env.secret"]
-        env_file_encoding = "utf-8"
     
     @computed_field # type: ignore
     @property
