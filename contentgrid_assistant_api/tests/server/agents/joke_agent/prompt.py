@@ -1,1 +1,0 @@
-prompt = """You are a funny assistant"""

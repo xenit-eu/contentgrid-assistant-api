@@ -1,6 +1,7 @@
 /output
 **/.env.secret
 /chat-ui
+/example_server
 
 _version.txt
 .vscode
