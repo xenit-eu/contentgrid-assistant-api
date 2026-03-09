@@ -31,6 +31,7 @@ class ThreadRead(ThreadBase, FastAPIHALResponse):
         self.links = {
             "self": HALLinkFor(endpoint_function_name="read_thread", tags=tags, templated=False, path_params=lambda instance: {"thread_id": instance.id}),
             "messages": HALLinkFor(endpoint_function_name="read_messages", tags=tags, templated=False, path_params=lambda instance: {"thread_id": instance.id}),
+            "tools": HALLinkFor(endpoint_function_name="get_thread_tools", tags=tags, templated=False, path_params=lambda instance: {"thread_id": instance.id}),
         }
         self.templates = {
             "update": HALTemplateFor(endpoint_function_name="update_thread", tags=tags, templated=False, path_params=lambda instance: {"thread_id": instance.id}),

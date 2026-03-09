@@ -4,7 +4,7 @@ from fastapi.concurrency import asynccontextmanager
 from contentgrid_assistant_api.config import DatabaseConfig, AssistantExtensionConfig
 from contentgrid_assistant_api.dependencies import DependencyResolver
 from contentgrid_assistant_api.routers.thread_router import generate_agent_thread_router
-from contentgrid_assistant_api.types.agents import Agent, AgentHomeResponse, AgentToolCollectionResponse, AgentToolResponse
+from contentgrid_assistant_api.types.agents import Agent, AgentHomeResponse
 
 def exit_uvicorn():
     import signal
@@ -37,9 +37,5 @@ def generate_agent_home_router(agent : Agent, extension_config: AssistantExtensi
     @router.get("/", response_model=AgentHomeResponse, response_model_exclude_unset=True)
     def get_agent_home():
         return AgentHomeResponse(**agent.model_dump(), tags=[agent.name])
-    
-    @router.get("/tools", response_model=AgentToolCollectionResponse, response_model_exclude_unset=True)
-    def get_agent_tools():
-        return AgentToolCollectionResponse(_embedded={"tools": [AgentToolResponse(**tool.model_dump()) for tool in agent.tools]}, tags=[agent.name])
 
     return router

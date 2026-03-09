@@ -117,7 +117,7 @@ class TestThreadAccessControl:
             "/test/test_agent/threads/?origin=http://example.com/resource/1"
         )
         
-        assert response.status_code == 200
+        assert response.status_code == 201
         thread = response.json()
         assert "id" in thread
         assert thread["name"] == "New Thread"
@@ -132,7 +132,7 @@ class TestThreadAccessControl:
         create_response = client.post(
             "/test/test_agent/threads/?origin=http://example.com/resource/1"
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # List threads
@@ -155,7 +155,7 @@ class TestThreadAccessControl:
         create_response = client.post(
             "/test/test_agent/threads/?origin=http://example.com/resource/1"
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # Read the thread
@@ -172,7 +172,7 @@ class TestThreadAccessControl:
         create_response = client.post(
             "/test/test_agent/threads/?origin=http://example.com/resource/1"
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # Update the thread
@@ -193,12 +193,12 @@ class TestThreadAccessControl:
             "/test/test_agent/threads/",
             data={"origin": "http://example.com/resource/1"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # Delete the thread
         delete_response = client.delete(f"/test/test_agent/threads/{thread_id}")
-        assert delete_response.status_code == 200
+        assert delete_response.status_code == 204
         
         # Verify thread is deleted
         read_response = client.get(f"/test/test_agent/threads/{thread_id}")
@@ -212,7 +212,7 @@ class TestThreadAccessControl:
             "/test/test_agent/threads/",
             data={"origin": "http://example.com/resource/1"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # User 2 tries to read User 1's thread
@@ -229,7 +229,7 @@ class TestThreadAccessControl:
             "/test/test_agent/threads/",
             data={"origin": "http://example.com/resource/1"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # User 2 tries to update User 1's thread
@@ -249,7 +249,7 @@ class TestThreadAccessControl:
             "/test/test_agent/threads/",
             data={"origin": "http://example.com/resource/1"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # User 2 tries to delete User 1's thread
@@ -312,7 +312,7 @@ class TestThreadAccessControl:
         create_response = client.post(
             "/test/test_agent/threads/?origin=http://example.com/resource/1"
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # Read messages
@@ -330,7 +330,7 @@ class TestThreadAccessControl:
         create_response = client.post(
             "/test/test_agent/threads/?origin=http://example.com/resource/1"
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # User 2 tries to read User 1's messages
@@ -346,7 +346,7 @@ class TestThreadAccessControl:
         create_response = client.post(
             "/test/test_agent/threads/?origin=http://example.com/resource/1"
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code == 201
         thread_id = create_response.json()["id"]
         
         # User 2 tries to add a message to User 1's thread
@@ -368,7 +368,7 @@ class TestThreadAccessControl:
             response = client.post(
                 f"/test/test_agent/threads/?origin=http://example.com/resource/{user.sub}"
             )
-            assert response.status_code == 200
+            assert response.status_code == 201
             user_threads[user.sub] = response.json()["id"]
         
         # Each user verifies they can only access their own thread

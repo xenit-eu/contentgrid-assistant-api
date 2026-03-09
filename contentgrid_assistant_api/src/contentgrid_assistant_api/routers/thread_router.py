@@ -11,6 +11,8 @@ from contentgrid_assistant_api.dependencies import DependencyResolver
 from contentgrid_extension_helpers.responses.hal import FastAPIHALCollection, HALLinkFor, HALTemplateFor
 from contentgrid_extension_helpers.authentication import ContentGridUser
 from contentgrid_assistant_api.routers.message_router import generate_agent_message_router
+from contentgrid_assistant_api.types.agents import AgentToolCollectionResponse, AgentToolResponse
+from contentgrid_assistant_api.types.context import DefaultThreadContext
 from langchain.messages import HumanMessage
 from langgraph.graph.state import CompiledStateGraph
 from contentgrid_assistant_api.config import AssistantExtensionConfig
@@ -73,6 +75,36 @@ def generate_agent_thread_router(dep_resolver: DependencyResolver, extension_con
         """Get thread by ID"""
         thread = thread_repo.get_by_id_for_user(thread_id, user)
         return ThreadRead(**thread.model_dump(), tags=tags)
+
+    @threadrouter.get("/{thread_id}/tools", response_model=AgentToolCollectionResponse, response_model_exclude_none=True)
+    def get_thread_tools(
+        thread_id: uuid.UUID,
+        user: ContentGridUser = Depends(dep_resolver.get_current_user_dependency()),
+        thread_repo: ThreadRepository = Depends(dep_resolver.get_thread_repository_dependency()),
+        thread_context: DefaultThreadContext = Depends(dep_resolver.get_thread_context_dependency())
+    ):
+        """Get available tools for a thread"""
+        tools_list = dep_resolver.agent.get_tools(thread_context)
+        
+        # Extract tool information including schema
+        tool_responses = []
+        for tool in tools_list:
+            tool_dict = tool.model_dump()
+            
+            # Extract schema if args_schema is available
+            if hasattr(tool, 'args_schema') and tool.args_schema:
+                try:
+                    # Get JSON schema from Pydantic model
+                    tool_dict['args'] = tool.args_schema.model_json_schema()
+                except (AttributeError, Exception):
+                    # Fallback if schema doesn't exist or can't be extracted
+                    tool_dict['args'] = {}
+            else:
+                tool_dict['args'] = {}
+            
+            tool_responses.append(AgentToolResponse(**tool_dict))
+        
+        return AgentToolCollectionResponse(thread_id=thread_id, _embedded={"tools": tool_responses}, tags=tags)
 
     @threadrouter.patch("/{thread_id}", response_model=ThreadRead, response_model_exclude_none=True)
     def update_thread(
