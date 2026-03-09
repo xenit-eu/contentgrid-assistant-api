@@ -11,7 +11,7 @@ from fastapi import APIRouter, BackgroundTasks, File, Form, Request, UploadFile,
 from fastapi.params import Depends
 from contentgrid_assistant_api.config import AssistantExtensionConfig
 from fastapi.responses import StreamingResponse
-from contentgrid_assistant_api.db.repositories.thread import ThreadRepository
+from contentgrid_assistant_api.db.repositories.thread_repository import ThreadRepository
 from contentgrid_assistant_api.db.types.message import HALHumanMessage, HALAIMessage, HALSystemMessage, HALToolMessage
 from contentgrid_assistant_api.dependencies import DependencyResolver
 from contentgrid_extension_helpers.authentication import ContentGridUser

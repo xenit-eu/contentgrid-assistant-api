@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import HttpUrl
 
-from contentgrid_assistant_api.db.repositories.thread import ThreadRepository
+from contentgrid_assistant_api.db.repositories.thread_repository import ThreadRepository
 from contentgrid_assistant_api.db.types.thread import ThreadRead, ThreadUpdate
 from contentgrid_assistant_api.dependencies import DependencyResolver
 from contentgrid_extension_helpers.responses.hal import FastAPIHALCollection, HALLinkFor, HALTemplateFor

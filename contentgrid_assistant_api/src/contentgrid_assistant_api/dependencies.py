@@ -3,7 +3,7 @@ import uuid
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session
-from contentgrid_assistant_api.db.repositories.thread import ThreadRepository
+from contentgrid_assistant_api.db.repositories.thread_repository import ThreadRepository
 from contentgrid_extension_helpers.dependencies.sqlalch.db import SQLiteSessionFactory, PostgresSessionFactory
 from contentgrid_extension_helpers.dependencies.authentication.user import ContentGridUser
 from langgraph.checkpoint.postgres import PostgresSaver
