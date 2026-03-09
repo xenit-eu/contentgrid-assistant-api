@@ -57,13 +57,13 @@ class DependencyResolver():
         def get_thread_context(thread_id: uuid.UUID, thread_repository: ThreadRepository = Depends(self.get_thread_repository_dependency()), user: ContentGridUser = Depends(self.get_current_user_dependency())) -> DefaultThreadContext:
             # Getting the Conversation context from the incoming request.
             # This dependency can only be used on /{thread_id}/... endpoints
-            # Each thread is related to a blueprint_url, using the thread_id we fetch that blueprint_url using the thread_repository.
+            # Each thread is related to a possible origin, using the thread_id we fetch that origin using the thread_repository.
             # If the user is not allowed to read the thread, the database won't return the thread and the request is terminated with 404 early.
-            # If the user is allowed to read, the blueprint_url from the database is injected in the conversation context which tools can access.
+            # If the user is allowed to read, the origin from the database is injected in the conversation context which tools can access.
             # ThreadContext shows all fields in the thread's context of the user.
             thread = thread_repository.get_by_id_for_user(thread_id=thread_id, user=user)
-            # Here we could check if the user is still allowed to reach the blueprint. 
-            # > This is done in the fetch_datamodel node in the langgraph. If that nodes fails, execution is halted.
+            # Here we could check if the user is still allowed to reach the origin. 
+            # > This should be done in the agent graphs. Or you can let the tools fail or add a graph that fetches the origin (like fetch datamodel in the console assistant or fetch profile in the navigator assistant)
             # btw mypy complains about messages not being passed but that is not good because then the conversation is empty. so do not pass messages here. it should come from the postgres persistance.
             return self.agent.thread_context(user=user, origin=thread.origin, thread_id=str(thread_id)) # type: ignore
         return get_thread_context
