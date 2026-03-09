@@ -19,10 +19,8 @@ class Agent(BaseModel):
     
 class AgentHomeResponse(FastAPIHALResponse):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
     name : str
     version : str
-    # tools : List[BaseTool] = Field(exclude=True, default=[])
     
     def __init__(self, tags: Optional[List[str | Enum]]=None, **kwargs):
         super().__init__(**kwargs)
@@ -35,9 +33,7 @@ class AgentHomeResponse(FastAPIHALResponse):
 class AgentToolResponse(FastAPIHALResponse):
     name : str
     description : str
-    
-    #TODO add halforms templates here to disable or enable tools
-    
+        
 class AgentToolCollectionResponse(FastAPIHALCollection[AgentToolResponse]):
     
     def __init__(self, tags: Optional[List[str | Enum]]=None, **kwargs):
