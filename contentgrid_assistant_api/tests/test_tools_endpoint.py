@@ -62,7 +62,13 @@ def calculate_tool(expression: str, precision: int = 2) -> str:
     return f"Result of {expression}"
 
 
-test_tools = [search_tool, calculate_tool]
+@tool("increment")
+def increment_tool(number: int) -> int:
+    """Increment a number by one"""
+    return number + 1
+
+
+test_tools = [search_tool, calculate_tool, increment_tool]
 
 
 # Test users
@@ -173,12 +179,13 @@ class TestToolsEndpoint:
         assert "tools" in tools_data["_embedded"]
         
         tools = tools_data["_embedded"]["tools"]
-        assert len(tools) == 2
+        assert len(tools) == 3
         
         # Check tool names
         tool_names = [tool["name"] for tool in tools]
         assert "search" in tool_names
         assert "calculate" in tool_names
+        assert "increment" in tool_names
     
     def test_tools_include_descriptions(self, client, current_user_store):
         """Test that tools include descriptions"""
@@ -379,6 +386,41 @@ class TestToolsEndpoint:
         links = tools_data["_links"]
         assert "self" in links
         assert "thread" in links
+    
+    def test_simple_tool_schema_includes_number_field(self, client, current_user_store):
+        """Test that simple tool schema includes the number field"""
+        current_user_store["user"] = TEST_USER
+        
+        # Create a thread
+        create_response = client.post(
+            "/test/test_agent/threads/?origin=http://example.com/resource/1"
+        )
+        assert create_response.status_code == 201
+        thread_id = create_response.json()["id"]
+        
+        # Get tools
+        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
+        assert tools_response.status_code == 200
+        
+        tools = tools_response.json()["_embedded"]["tools"]
+        
+        # Find the increment tool
+        increment_tool = next(t for t in tools if t["name"] == "increment")
+        
+        # Check schema structure
+        assert "args" in increment_tool
+        schema = increment_tool["args"]
+        assert "properties" in schema
+        assert "number" in schema["properties"]
+        
+        # Check number field details
+        number_schema = schema["properties"]["number"]
+        assert "type" in number_schema
+        assert number_schema["type"] == "integer"
+        
+        # Check it's in required fields
+        assert "required" in schema
+        assert "number" in schema["required"]
 
 
 if __name__ == "__main__":
