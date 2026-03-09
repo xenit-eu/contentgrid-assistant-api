@@ -7,7 +7,7 @@ import typing
 import uuid
 from enum import Enum
 from langgraph.graph.state import CompiledStateGraph
-from fastapi import APIRouter, BackgroundTasks, File, Form, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, Request, UploadFile, status
 from fastapi.params import Depends
 from contentgrid_assistant_api.config import AssistantExtensionConfig
 from fastapi.responses import StreamingResponse
@@ -129,7 +129,7 @@ def generate_agent_message_router(dep_resolver: DependencyResolver, extension_co
         )
         
         
-    @messagesrouter.post("/", response_model=HALHumanMessage, response_model_exclude_none=True)
+    @messagesrouter.post("/", response_model=HALHumanMessage, status_code=status.HTTP_202_ACCEPTED, response_model_exclude_none=True)
     async def add_message(
         request: Request,
         thread_id: uuid.UUID,

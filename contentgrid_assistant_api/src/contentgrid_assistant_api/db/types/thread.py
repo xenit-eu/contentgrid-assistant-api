@@ -38,7 +38,7 @@ class ThreadRead(ThreadBase, FastAPIHALResponse):
         }
 
 class ThreadCreate(ThreadBase):
-    # Creating a thread will be done by injecting the user_sub and blueprint from the origin.
+    # Creating a thread will be done by injecting the user_sub and origin from the dependencies.
     pass
 
 class ThreadUpdate(BaseModel):

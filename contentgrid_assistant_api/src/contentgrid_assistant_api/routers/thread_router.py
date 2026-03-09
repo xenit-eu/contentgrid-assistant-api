@@ -2,7 +2,7 @@
 from enum import Enum
 from typing import Annotated, List, Optional
 import uuid
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import HttpUrl
 
 from contentgrid_assistant_api.db.repositories.thread import ThreadRepository
@@ -22,7 +22,7 @@ def generate_agent_thread_router(dep_resolver: DependencyResolver, extension_con
         generate_agent_message_router(dep_resolver, extension_config, tags=tags)
     )
 
-    @threadrouter.post("/", response_model=ThreadRead, response_model_exclude_none=True)
+    @threadrouter.post("/", response_model=ThreadRead, status_code=status.HTTP_201_CREATED, response_model_exclude_none=True)
     def create_thread(
         origin: Optional[HttpUrl] = None,
         user: ContentGridUser = Depends(dep_resolver.get_current_user_dependency()),
@@ -85,7 +85,7 @@ def generate_agent_thread_router(dep_resolver: DependencyResolver, extension_con
         updated_thread = thread_repo.update_for_user(thread_id, thread_update, user)
         return ThreadRead(**updated_thread.model_dump(), tags=tags)
 
-    @threadrouter.delete("/{thread_id}")
+    @threadrouter.delete("/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
     def delete_thread(
         thread_id: uuid.UUID,
         user: ContentGridUser = Depends(dep_resolver.get_current_user_dependency()),
@@ -93,6 +93,5 @@ def generate_agent_thread_router(dep_resolver: DependencyResolver, extension_con
     ):
         """Delete thread"""
         thread_repo.delete_for_user(thread_id, user)
-        return {"message": "Thread deleted successfully"}
     
     return threadrouter
