@@ -180,7 +180,7 @@ def should_continue(state: AgentState):
     return END
 
 # Build the graph
-agent_builder = StateGraph(MessagesState, context_schema=ThreadContext)
+agent_builder = StateGraph(AgentState, context_schema=ThreadContext)
 agent_builder.add_node("llm_call", llm_call)
 agent_builder.add_node("tool_node", tool_node)
 agent_builder.add_edge(START, "llm_call")
