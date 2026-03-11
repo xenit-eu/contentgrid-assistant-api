@@ -159,103 +159,70 @@ class TestToolsEndpoint:
         with TestClient(test_app) as client:
             yield client
     
-    def test_get_tools_for_thread(self, client, current_user_store):
-        """Test retrieving tools for a thread"""
+    @pytest.fixture
+    def thread_id(self, client, current_user_store):
+        """Create a thread and return its ID"""
         current_user_store["user"] = TEST_USER
-        
-        # Create a thread
         create_response = client.post(
             "/test/test_agent/threads/?origin=http://example.com/resource/1"
         )
         assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools for the thread
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        assert tools_response.status_code == 200
-        
-        tools_data = tools_response.json()
-        assert "_embedded" in tools_data
-        assert "tools" in tools_data["_embedded"]
-        
-        tools = tools_data["_embedded"]["tools"]
+        return create_response.json()["id"]
+    
+    @pytest.fixture
+    def tools_response(self, client, thread_id):
+        """Get tools for a thread"""
+        response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
+        assert response.status_code == 200
+        return response.json()
+    
+    @pytest.fixture
+    def tools(self, tools_response):
+        """Extract tools list from response"""
+        return tools_response["_embedded"]["tools"]
+    
+    @pytest.fixture
+    def search_tool_schema(self, tools):
+        """Get the search tool from tools list"""
+        return next(t for t in tools if t["name"] == "search")
+    
+    @pytest.fixture
+    def calculate_tool_schema(self, tools):
+        """Get the calculate tool from tools list"""
+        return next(t for t in tools if t["name"] == "calculate")
+    
+    @pytest.fixture
+    def increment_tool_schema(self, tools):
+        """Get the increment tool from tools list"""
+        return next(t for t in tools if t["name"] == "increment")
+    
+    def test_get_tools_for_thread(self, tools):
+        """Test retrieving tools for a thread"""
         assert len(tools) == 3
         
-        # Check tool names
         tool_names = [tool["name"] for tool in tools]
         assert "search" in tool_names
         assert "calculate" in tool_names
         assert "increment" in tool_names
     
-    def test_tools_include_descriptions(self, client, current_user_store):
+    def test_tools_include_descriptions(self, search_tool_schema, calculate_tool_schema):
         """Test that tools include descriptions"""
-        current_user_store["user"] = TEST_USER
-        
-        # Create a thread
-        create_response = client.post(
-            "/test/test_agent/threads/?origin=http://example.com/resource/1"
-        )
-        assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        assert tools_response.status_code == 200
-        
-        tools = tools_response.json()["_embedded"]["tools"]
-        
-        # Find specific tools and check descriptions
-        search_tool = next(t for t in tools if t["name"] == "search")
-        calculate_tool = next(t for t in tools if t["name"] == "calculate")
-        
-        assert "Search for information" in search_tool["description"]
-        assert "Calculate mathematical expressions" in calculate_tool["description"]
+        assert "Search for information" in search_tool_schema["description"]
+        assert "Calculate mathematical expressions" in calculate_tool_schema["description"]
     
-    def test_tools_include_json_schema(self, client, current_user_store):
+    def test_tools_include_json_schema(self, search_tool_schema):
         """Test that tools include JSON schema for arguments"""
-        current_user_store["user"] = TEST_USER
-        
-        # Create a thread
-        create_response = client.post(
-            "/test/test_agent/threads/?origin=http://example.com/resource/1"
-        )
-        assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        assert tools_response.status_code == 200
-        
-        tools = tools_response.json()["_embedded"]["tools"]
-        search_tool = next(t for t in tools if t["name"] == "search")
-        
-        # Check schema structure
-        assert "args" in search_tool
-        schema = search_tool["args"]
+        assert "args" in search_tool_schema
+        schema = search_tool_schema["args"]
         assert "type" in schema
         assert schema["type"] == "object"
         assert "properties" in schema
         assert "required" in schema
     
-    def test_schema_includes_field_descriptions(self, client, current_user_store):
+    def test_schema_includes_field_descriptions(self, search_tool_schema):
         """Test that schema includes field descriptions"""
-        current_user_store["user"] = TEST_USER
+        schema = search_tool_schema["args"]
         
-        # Create a thread
-        create_response = client.post(
-            "/test/test_agent/threads/?origin=http://example.com/resource/1"
-        )
-        assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        tools = tools_response.json()["_embedded"]["tools"]
-        
-        search_tool = next(t for t in tools if t["name"] == "search")
-        schema = search_tool["args"]
-        
-        # Check field descriptions
         assert "query" in schema["properties"]
         assert "description" in schema["properties"]["query"]
         assert "search query" in schema["properties"]["query"]["description"].lower()
@@ -264,23 +231,9 @@ class TestToolsEndpoint:
         assert "description" in schema["properties"]["limit"]
         assert "maximum number of results" in schema["properties"]["limit"]["description"].lower()
     
-    def test_schema_includes_validation_rules(self, client, current_user_store):
+    def test_schema_includes_validation_rules(self, search_tool_schema):
         """Test that schema includes validation rules"""
-        current_user_store["user"] = TEST_USER
-        
-        # Create a thread
-        create_response = client.post(
-            "/test/test_agent/threads/?origin=http://example.com/resource/1"
-        )
-        assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        tools = tools_response.json()["_embedded"]["tools"]
-        
-        search_tool = next(t for t in tools if t["name"] == "search")
-        schema = search_tool["args"]
+        schema = search_tool_schema["args"]
         
         # Check validation rules for query field
         query_schema = schema["properties"]["query"]
@@ -295,46 +248,17 @@ class TestToolsEndpoint:
         assert "maximum" in limit_schema
         assert limit_schema["maximum"] == 100
     
-    def test_schema_includes_defaults(self, client, current_user_store):
+    def test_schema_includes_defaults(self, search_tool_schema):
         """Test that schema includes default values"""
-        current_user_store["user"] = TEST_USER
+        schema = search_tool_schema["args"]
         
-        # Create a thread
-        create_response = client.post(
-            "/test/test_agent/threads/?origin=http://example.com/resource/1"
-        )
-        assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        tools = tools_response.json()["_embedded"]["tools"]
-        
-        search_tool = next(t for t in tools if t["name"] == "search")
-        schema = search_tool["args"]
-        
-        # Check default value for limit
         limit_schema = schema["properties"]["limit"]
         assert "default" in limit_schema
         assert limit_schema["default"] == 10
     
-    def test_required_fields_in_schema(self, client, current_user_store):
+    def test_required_fields_in_schema(self, search_tool_schema):
         """Test that schema includes required fields"""
-        current_user_store["user"] = TEST_USER
-        
-        # Create a thread
-        create_response = client.post(
-            "/test/test_agent/threads/?origin=http://example.com/resource/1"
-        )
-        assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        tools = tools_response.json()["_embedded"]["tools"]
-        
-        search_tool = next(t for t in tools if t["name"] == "search")
-        schema = search_tool["args"]
+        schema = search_tool_schema["args"]
         
         # Query should be required
         assert "query" in schema["required"]
@@ -361,55 +285,21 @@ class TestToolsEndpoint:
         tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
         assert tools_response.status_code == 404
     
-    def test_tools_response_structure(self, client, current_user_store):
+    def test_tools_response_structure(self, tools_response):
         """Test the complete structure of the tools response"""
-        current_user_store["user"] = TEST_USER
-        
-        # Create a thread
-        create_response = client.post(
-            "/test/test_agent/threads/?origin=http://example.com/resource/1"
-        )
-        assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        assert tools_response.status_code == 200
-        
-        tools_data = tools_response.json()
-        
         # Check HAL structure
-        assert "_embedded" in tools_data
-        assert "_links" in tools_data
+        assert "_embedded" in tools_response
+        assert "_links" in tools_response
         
         # Check links
-        links = tools_data["_links"]
+        links = tools_response["_links"]
         assert "self" in links
         assert "thread" in links
     
-    def test_simple_tool_schema_includes_number_field(self, client, current_user_store):
+    def test_simple_tool_schema_includes_number_field(self, increment_tool_schema):
         """Test that simple tool schema includes the number field"""
-        current_user_store["user"] = TEST_USER
-        
-        # Create a thread
-        create_response = client.post(
-            "/test/test_agent/threads/?origin=http://example.com/resource/1"
-        )
-        assert create_response.status_code == 201
-        thread_id = create_response.json()["id"]
-        
-        # Get tools
-        tools_response = client.get(f"/test/test_agent/threads/{thread_id}/tools")
-        assert tools_response.status_code == 200
-        
-        tools = tools_response.json()["_embedded"]["tools"]
-        
-        # Find the increment tool
-        increment_tool = next(t for t in tools if t["name"] == "increment")
-        
-        # Check schema structure
-        assert "args" in increment_tool
-        schema = increment_tool["args"]
+        assert "args" in increment_tool_schema
+        schema = increment_tool_schema["args"]
         assert "properties" in schema
         assert "number" in schema["properties"]
         
