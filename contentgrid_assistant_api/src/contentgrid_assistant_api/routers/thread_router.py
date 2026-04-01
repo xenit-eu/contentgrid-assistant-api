@@ -15,13 +15,58 @@ from contentgrid_assistant_api.types.agents import AgentToolCollectionResponse, 
 from contentgrid_assistant_api.types.context import DefaultThreadContext
 from langchain.messages import HumanMessage
 from langgraph.graph.state import CompiledStateGraph
-from contentgrid_assistant_api.config import AssistantExtensionConfig
+from contentgrid_assistant_api.config import AssistantExtensionConfig, LangfuseConfig
+import logging
+
+
+def _create_langfuse_config_for_thread(
+    thread_id: str,
+    user: ContentGridUser,
+    agent_name: str,
+    langfuse_config: LangfuseConfig
+) -> dict:
+    """Create LangChain config with Langfuse callback handler for thread creation."""
+    config: dict = {}
     
-def generate_agent_thread_router(dep_resolver: DependencyResolver, extension_config: AssistantExtensionConfig, tags: Optional[List[str | Enum]]=None):
+    if langfuse_config.is_configured:
+        try:
+            from langfuse.langchain import CallbackHandler
+            
+            langfuse_handler = CallbackHandler()
+            config["callbacks"] = [langfuse_handler]
+            config["metadata"] = {
+                "langfuse_session_id": thread_id,
+                "langfuse_user_id": user.sub,
+                "langfuse_tags": [agent_name, "thread-creation"]
+            }
+        except ImportError:
+            logging.warning("Langfuse not installed, tracing disabled")
+        except Exception as e:
+            logging.warning(f"Failed to create Langfuse handler: {e}")
+    
+    return config
+
+
+def generate_agent_thread_router(
+    dep_resolver: DependencyResolver,
+    extension_config: AssistantExtensionConfig,
+    langfuse_config: LangfuseConfig | None = None,
+    agent_name: str = "agent",
+    tags: Optional[List[str | Enum]] = None
+):
+    # Use provided langfuse_config or create default
+    langfuse_cfg = langfuse_config or LangfuseConfig()
+    
     threadrouter = APIRouter(prefix=extension_config.routes_thread_prefix, tags=tags or ["threads"])
 
     threadrouter.include_router(
-        generate_agent_message_router(dep_resolver, extension_config, tags=tags)
+        generate_agent_message_router(
+            dep_resolver,
+            extension_config,
+            langfuse_config=langfuse_cfg,
+            agent_name=agent_name,
+            tags=tags
+        )
     )
 
     @threadrouter.post("/", response_model=ThreadRead, status_code=status.HTTP_201_CREATED, response_model_exclude_none=True)
@@ -36,9 +81,17 @@ def generate_agent_thread_router(dep_resolver: DependencyResolver, extension_con
         thread_id = uuid.uuid4()
         messages = [HumanMessage(content=extension_config.opening_message)]
         context = dep_resolver.agent.thread_context(thread_id=str(thread_id), user=user, origin=origin)
+        
+        # Create Langfuse config for thread creation tracing
+        lf_config = _create_langfuse_config_for_thread(str(thread_id), user, agent_name, langfuse_cfg)
+        invoke_config = {
+            "configurable": context,
+            **lf_config
+        }
+        
         agent.invoke(
             {"messages": messages},
-            {"configurable": context}, #type: ignore
+            invoke_config, #type: ignore
             context=context, #type: ignore
         )
         
