@@ -2,6 +2,7 @@
 from enum import Enum
 from typing import Annotated, List, Optional
 import uuid
+from contentgrid_assistant_api.tracing import _create_langfuse_config_for_thread
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import HttpUrl
 
@@ -16,35 +17,6 @@ from contentgrid_assistant_api.types.context import DefaultThreadContext
 from langchain.messages import HumanMessage
 from langgraph.graph.state import CompiledStateGraph
 from contentgrid_assistant_api.config import AssistantExtensionConfig, LangfuseConfig
-import logging
-
-
-def _create_langfuse_config_for_thread(
-    thread_id: str,
-    user: ContentGridUser,
-    agent_name: str,
-    langfuse_config: LangfuseConfig
-) -> dict:
-    """Create LangChain config with Langfuse callback handler for thread creation."""
-    config: dict = {}
-    
-    if langfuse_config.is_configured:
-        try:
-            from langfuse.langchain import CallbackHandler
-            
-            langfuse_handler = CallbackHandler()
-            config["callbacks"] = [langfuse_handler]
-            config["metadata"] = {
-                "langfuse_session_id": thread_id,
-                "langfuse_user_id": user.sub,
-                "langfuse_tags": [agent_name, "thread-creation"]
-            }
-        except ImportError:
-            logging.warning("Langfuse not installed, tracing disabled")
-        except Exception as e:
-            logging.warning(f"Failed to create Langfuse handler: {e}")
-    
-    return config
 
 
 def generate_agent_thread_router(
@@ -83,7 +55,7 @@ def generate_agent_thread_router(
         context = dep_resolver.agent.thread_context(thread_id=str(thread_id), user=user, origin=origin)
         
         # Create Langfuse config for thread creation tracing
-        lf_config = _create_langfuse_config_for_thread(str(thread_id), user, agent_name, langfuse_cfg)
+        lf_config = _create_langfuse_config_for_thread(str(thread_id), user, agent_name, langfuse_cfg, extra_tags=["create-thread"])
         invoke_config = {
             "configurable": context,
             **lf_config

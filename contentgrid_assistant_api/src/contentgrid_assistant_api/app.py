@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from typing import List, Optional
 from fastapi import Depends, FastAPI, status, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +12,7 @@ from contentgrid_extension_helpers.problem_response import ProblemResponse
 from contentgrid_assistant_api.routers.agent_home import generate_agent_home_router
 from contentgrid_assistant_api.config import AssistantExtensionConfig, DatabaseConfig, LangfuseConfig
 from contentgrid_assistant_api.types.agents import Agent, AgentHomeResponse
+from contentgrid_assistant_api.tracing import setup_langfuse, shutdown_langfuse
 
 
 class ContentGridAssistantAPI(FastAPI):
@@ -22,13 +24,12 @@ class ContentGridAssistantAPI(FastAPI):
                  langfuse_config: LangfuseConfig | None = None,
                  agents: List[Agent] = [],
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.extension_config = extension_config or AssistantExtensionConfig()
         self.database_config = database_config or DatabaseConfig()
         self.langfuse_config = langfuse_config or LangfuseConfig()
         
         self._setup_logging()
-        self._setup_langfuse()
+        super().__init__(*args, lifespan=self._lifespan, **kwargs)
         if not self.extension_config.production:
             self._setup_cors()
         self._setup_hal_response()
@@ -57,36 +58,12 @@ class ContentGridAssistantAPI(FastAPI):
         if self.extension_config.production:
             setup_json_logging()
     
-    def _setup_langfuse(self):
-        """Initialize Langfuse observability client.
-        
-        Langfuse is imported after config is loaded to ensure environment variables
-        are available during initialization.
-        """
-        if self.langfuse_config.is_configured:
-            try:
-                from langfuse import Langfuse
-                
-                # Initialize the Langfuse singleton client
-                Langfuse(
-                    public_key=self.langfuse_config.langfuse_public_key,
-                    secret_key=self.langfuse_config.langfuse_secret_key,
-                    host=self.langfuse_config.langfuse_base_url,
-                )
-                logging.info("Langfuse observability initialized successfully")
-                
-                # Register shutdown handler to flush pending events
-                @self.on_event("shutdown")
-                async def shutdown_langfuse():
-                    from langfuse import get_client
-                    langfuse = get_client()
-                    langfuse.shutdown()
-                    logging.info("Langfuse client shutdown complete")
-                    
-            except Exception as e:
-                logging.warning(f"Failed to initialize Langfuse: {e}. Tracing will be disabled.")
-        else:
-            logging.info("Langfuse not configured - tracing disabled. Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY to enable.")
+    @asynccontextmanager
+    async def _lifespan(self, app: "ContentGridAssistantAPI"):
+        """Manage application lifespan: initialize and shut down Langfuse."""
+        setup_langfuse(self.langfuse_config)
+        yield
+        shutdown_langfuse(self.langfuse_config)
     
     def _setup_cors(self):
         """Configure CORS middleware"""
