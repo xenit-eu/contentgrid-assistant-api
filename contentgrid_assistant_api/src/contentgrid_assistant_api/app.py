@@ -76,7 +76,7 @@ class ContentGridAssistantAPI(FastAPI):
         for agent in agents:
             self.include_router(
                 generate_agent_home_router(agent, self.extension_config, self.database_config),
-                prefix=f"{self.extension_config.extension_path_prefix if self.extension_config.extension_path_prefix else ""}/{agent.name}",
+                prefix=f"{self.extension_config.extension_path_prefix if self.extension_config.extension_path_prefix else ''}/{agent.name}",
                 tags=[agent.name],
                 dependencies=[Depends(agent.get_current_user_override)]
             )
