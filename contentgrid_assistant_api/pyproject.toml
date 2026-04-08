@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "contentgrid-assistant-api"
+dynamic = ["version"]
 description = "FastAPI wrapper for contentgrid assistants"
 readme = "README.md"
 authors = [{ name = "Ranec Belpaire", email = "ranec.belpaire@xenit.eu" }]
