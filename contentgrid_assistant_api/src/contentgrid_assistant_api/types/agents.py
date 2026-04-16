@@ -25,18 +25,13 @@ class AgentHomeResponse(FastAPIHALResponse):
     name : str
     version : str
     
-    def __init__(self, origin: Optional[HttpUrl] = None, tags: Optional[List[str | Enum]]=None, **kwargs):
+    def __init__(self, origin: Optional[HttpUrl] = None, tags: Optional[List[str | Enum]] = None, **kwargs):
         super().__init__(**kwargs)
-        if origin:
-            self.links = {
-                "self" : HALLinkFor(endpoint_function_name="get_agent_home", params={"origin" : str(origin)}, tags=tags),
-                "threads" : HALLinkFor(endpoint_function_name="read_threads", params={"origin" : str(origin)}, tags=tags),
-            }
-        else:
-            self.links = {
-                "self" : HALLinkFor(endpoint_function_name="get_agent_home", tags=tags),
-                "threads" : HALLinkFor(endpoint_function_name="read_threads", tags=tags),
-            }
+        params = {"origin": str(origin)} if origin else {}
+        self.links = {
+            "self": HALLinkFor(endpoint_function_name="get_agent_home", params=params, tags=tags),
+            "threads": HALLinkFor(endpoint_function_name="read_threads",   params=params, tags=tags),
+        }
     
 class AgentToolResponse(FastAPIHALResponse):
     name : str
