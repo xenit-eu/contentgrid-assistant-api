@@ -39,6 +39,5 @@ def generate_agent_home_router(agent : Agent, extension_config: AssistantExtensi
     
     @router.get("/", response_model=AgentHomeResponse, response_model_exclude_unset=True)
     def get_agent_home(origin: Optional[HttpUrl] = None):
-        home_response = AgentHomeResponse(**agent.model_dump(), origin=origin, tags=[agent.name])
-        return home_response
+        return AgentHomeResponse(**agent.model_dump(), origin=origin, tags=[agent.name])
     return router
