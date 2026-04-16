@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 from fastapi import Depends, FastAPI, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from openai import APIError
@@ -11,6 +11,7 @@ from contentgrid_extension_helpers.problem_response import ProblemResponse
 from contentgrid_assistant_api.routers.agent_home import generate_agent_home_router
 from contentgrid_assistant_api.config import AssistantExtensionConfig, DatabaseConfig
 from contentgrid_assistant_api.types.agents import Agent, AgentHomeResponse
+from pydantic import HttpUrl
 
 
 class ContentGridAssistantAPI(FastAPI):
@@ -89,11 +90,11 @@ class ContentGridAssistantAPI(FastAPI):
             return "ok"
         
         @self.get(f"{self._server_prefix}/", response_model=FastAPIHALCollection, response_model_exclude_unset=True)
-        def get_server_resources():
+        def get_server_resources(origin: Optional[HttpUrl] = None):
             return FastAPIHALCollection(
                 _embedded={
                     "agents" : [
-                        AgentHomeResponse(**agent.model_dump(), tags=[agent.name]) for agent in agents
+                        AgentHomeResponse(**agent.model_dump(), origin=origin, tags=[agent.name]) for agent in agents
                     ] 
                 },
                 _links={

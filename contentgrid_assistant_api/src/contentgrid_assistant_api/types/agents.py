@@ -2,7 +2,7 @@
 from typing import Any, Callable, List, Optional
 from enum import Enum
 import uuid
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, HttpUrl
 from langchain.tools import BaseTool
 from contentgrid_extension_helpers.responses.hal import FastAPIHALResponse, FastAPIHALCollection, HALLinkFor
 from contentgrid_assistant_api.types.context import DefaultThreadContext
@@ -25,12 +25,18 @@ class AgentHomeResponse(FastAPIHALResponse):
     name : str
     version : str
     
-    def __init__(self, tags: Optional[List[str | Enum]]=None, **kwargs):
+    def __init__(self, origin: Optional[HttpUrl] = None, tags: Optional[List[str | Enum]]=None, **kwargs):
         super().__init__(**kwargs)
-        self.links = {
-            "self" : HALLinkFor(endpoint_function_name="get_agent_home", tags=tags),
-            "threads" : HALLinkFor(endpoint_function_name="read_threads", tags=tags),
-        }
+        if origin:
+            self.links = {
+                "self" : HALLinkFor(endpoint_function_name="get_agent_home", params={"origin" : str(origin)}, tags=tags),
+                "threads" : HALLinkFor(endpoint_function_name="read_threads", params={"origin" : str(origin)}, tags=tags),
+            }
+        else:
+            self.links = {
+                "self" : HALLinkFor(endpoint_function_name="get_agent_home", tags=tags),
+                "threads" : HALLinkFor(endpoint_function_name="read_threads", tags=tags),
+            }
     
 class AgentToolResponse(FastAPIHALResponse):
     name : str
