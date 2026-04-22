@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from typing import List, Optional
 from fastapi import Depends, FastAPI, status, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,8 +10,9 @@ from contentgrid_extension_helpers.logging import setup_json_logging
 from contentgrid_extension_helpers.problem_response import ProblemResponse
 
 from contentgrid_assistant_api.routers.agent_home import generate_agent_home_router
-from contentgrid_assistant_api.config import AssistantExtensionConfig, DatabaseConfig
+from contentgrid_assistant_api.config import AssistantExtensionConfig, DatabaseConfig, LangfuseConfig
 from contentgrid_assistant_api.types.agents import Agent, AgentHomeResponse
+from contentgrid_assistant_api.tracing import setup_langfuse, shutdown_langfuse
 from pydantic import HttpUrl
 
 
@@ -19,14 +21,16 @@ class ContentGridAssistantAPI(FastAPI):
     
     def __init__(self, 
                  extension_config: AssistantExtensionConfig | None = None, 
-                 database_config: DatabaseConfig | None = None, 
+                 database_config: DatabaseConfig | None = None,
+                 langfuse_config: LangfuseConfig | None = None,
                  agents: List[Agent] = [],
                  *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.extension_config = extension_config or AssistantExtensionConfig()
         self.database_config = database_config or DatabaseConfig()
+        self.langfuse_config = langfuse_config or LangfuseConfig()
         
         self._setup_logging()
+        super().__init__(*args, lifespan=self._lifespan, **kwargs)
         if not self.extension_config.production:
             self._setup_cors()
         self._setup_hal_response()
@@ -54,6 +58,13 @@ class ContentGridAssistantAPI(FastAPI):
         """Configure JSON logging for production environments"""
         if self.extension_config.production:
             setup_json_logging()
+    
+    @asynccontextmanager
+    async def _lifespan(self, app: "ContentGridAssistantAPI"):
+        """Manage application lifespan: initialize and shut down Langfuse."""
+        setup_langfuse(self.langfuse_config)
+        yield
+        shutdown_langfuse(self.langfuse_config)
     
     def _setup_cors(self):
         """Configure CORS middleware"""

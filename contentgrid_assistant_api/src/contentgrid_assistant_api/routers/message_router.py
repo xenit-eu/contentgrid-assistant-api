@@ -6,10 +6,11 @@ from typing import Annotated, AsyncGenerator, List, Union, Optional
 import typing
 import uuid
 from enum import Enum
+from contentgrid_assistant_api.tracing import _create_langfuse_config
 from langgraph.graph.state import CompiledStateGraph
 from fastapi import APIRouter, BackgroundTasks, File, Form, Request, UploadFile, status
 from fastapi.params import Depends
-from contentgrid_assistant_api.config import AssistantExtensionConfig
+from contentgrid_assistant_api.config import AssistantExtensionConfig, LangfuseConfig
 from fastapi.responses import StreamingResponse
 from contentgrid_assistant_api.db.repositories.thread_repository import ThreadRepository
 from contentgrid_assistant_api.db.types.message import HALHumanMessage, HALAIMessage, HALSystemMessage, HALToolMessage
@@ -20,14 +21,20 @@ from contentgrid_extension_helpers.responses.hal import FastAPIHALCollection, HA
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, BaseMessage, ToolMessage
 from fastapi import HTTPException
 
-
 # ContentBlocks
 from langchain_core.messages.content import create_image_block, create_file_block, create_audio_block, create_text_block, ImageContentBlock, AudioContentBlock, FileContentBlock, TextContentBlock
 import logging
 
 from contentgrid_assistant_api.types.context import DefaultThreadContext
 
-def generate_agent_message_router(dep_resolver: DependencyResolver, extension_config: AssistantExtensionConfig, tags: Optional[List[str | Enum]]=None) -> APIRouter:
+
+def generate_agent_message_router(
+    dep_resolver: DependencyResolver,
+    extension_config: AssistantExtensionConfig,
+    langfuse_config: LangfuseConfig,
+    agent_name: str,
+    tags: Optional[List[str | Enum]] = None
+) -> APIRouter:
     messagesrouter = APIRouter(prefix="/{thread_id}" + extension_config.routes_message_prefix, tags=tags or ["messages"])
 
     def convert_to_hal_message(message: BaseMessage, thread_id: uuid.UUID) -> Union[HALHumanMessage, HALAIMessage, HALSystemMessage, HALToolMessage]:
@@ -160,6 +167,9 @@ def generate_agent_message_router(dep_resolver: DependencyResolver, extension_co
         new_message = HumanMessage(content=content_blocks) # type: ignore
         messages = [new_message]
         
+        # Create Langfuse config with session_id, user_id, and tags for observability
+        lf_config = _create_langfuse_config(thread_context, user, agent_name, langfuse_config)
+        
         if streaming:
             state = agent.get_state(config={"configurable" : thread_context}) #type: ignore
             nb_current_messages = 0
@@ -168,9 +178,15 @@ def generate_agent_message_router(dep_resolver: DependencyResolver, extension_co
 
             @typing.no_type_check
             async def generate_stream(current_message_index) -> AsyncGenerator[str, None]:
+                # Merge Langfuse config with LangGraph config
+                stream_config = {
+                    "configurable": thread_context,
+                    "recursion_limit": extension_config.graph_recursion_limit,
+                    **lf_config
+                }
                 for mode, chunk in agent.stream(
                     {"messages": messages},
-                    {"configurable": thread_context, "recursion_limit": extension_config.graph_recursion_limit},
+                    stream_config,
                     context=thread_context,
                     stream_mode=["values", "messages"]
                 ):
@@ -214,11 +230,18 @@ def generate_agent_message_router(dep_resolver: DependencyResolver, extension_co
                 }
             )
         else:
+            # Capture lf_config for closure
+            invoke_config = {
+                "configurable": thread_context,
+                "recursion_limit": extension_config.graph_recursion_limit,
+                **lf_config
+            }
+            
             def process_agent_response():
                 try:
                     agent.invoke(
                         {"messages": messages},
-                        {"configurable": thread_context, "recursion_limit": extension_config.graph_recursion_limit},
+                        invoke_config,
                         context=thread_context,
                     )
                 except Exception as e:

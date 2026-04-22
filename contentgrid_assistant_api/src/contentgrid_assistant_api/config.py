@@ -1,8 +1,31 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field, ConfigDict
 from pydantic import computed_field
+from typing import Optional
 import logging
 import urllib
+
+class LangfuseConfig(BaseSettings):
+    """Configuration for Langfuse observability.
+    
+    Set these environment variables to enable tracing:
+    - LANGFUSE_SECRET_KEY: Your Langfuse secret key (sk-lf-...)
+    - LANGFUSE_PUBLIC_KEY: Your Langfuse public key (pk-lf-...)
+    - LANGFUSE_BASE_URL: Langfuse server URL (default: https://cloud.langfuse.com)
+    """
+    model_config = ConfigDict(extra="allow", env_file=[".env", ".env.secret"], env_file_encoding="utf-8")
+    
+    langfuse_secret_key: Optional[str] = Field(default=None)
+    langfuse_public_key: Optional[str] = Field(default=None)
+    langfuse_base_url: str = Field(default="https://cloud.langfuse.com")
+    langfuse_enabled: bool = Field(default=True, description="Enable/disable Langfuse tracing")
+    
+    @computed_field
+    @property
+    def is_configured(self) -> bool:
+        """Check if Langfuse credentials are configured"""
+        return bool(self.langfuse_secret_key and self.langfuse_public_key and self.langfuse_enabled)
+
 
 class AssistantExtensionConfig(BaseSettings):
     model_config = ConfigDict(extra="allow", env_file=[".env", ".env.secret"], env_file_encoding="utf-8")
