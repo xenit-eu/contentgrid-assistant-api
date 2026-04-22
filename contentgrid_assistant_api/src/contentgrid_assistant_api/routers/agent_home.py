@@ -1,10 +1,13 @@
+from typing import Optional
+
 from fastapi import APIRouter, FastAPI
 import os
 from fastapi.concurrency import asynccontextmanager
 from contentgrid_assistant_api.config import DatabaseConfig, AssistantExtensionConfig, LangfuseConfig
 from contentgrid_assistant_api.dependencies import DependencyResolver
-from contentgrid_assistant_api.routers.thread_router import generate_agent_thread_router
+from contentgrid_assistant_api.routers.thread_router import HALLinkFor, generate_agent_thread_router
 from contentgrid_assistant_api.types.agents import Agent, AgentHomeResponse
+from pydantic import HttpUrl
 
 def exit_uvicorn():
     import signal
@@ -49,7 +52,6 @@ def generate_agent_home_router(
     ))
     
     @router.get("/", response_model=AgentHomeResponse, response_model_exclude_unset=True)
-    def get_agent_home():
-        return AgentHomeResponse(**agent.model_dump(), tags=[agent.name])
-
+    def get_agent_home(origin: Optional[HttpUrl] = None):
+        return AgentHomeResponse(**agent.model_dump(), origin=origin, tags=[agent.name])
     return router
