@@ -64,4 +64,4 @@ def _create_langfuse_config(
     langfuse_config: LangfuseConfig
 ) -> dict:
     """Create LangChain config with Langfuse callback handler for an existing thread."""
-    return _create_langfuse_config_for_thread(thread_context.thread_id, user, agent_name, langfuse_config)
+    return _create_langfuse_config_for_thread(thread_context["thread_id"], user, agent_name, langfuse_config)
