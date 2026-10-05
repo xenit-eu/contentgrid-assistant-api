@@ -40,6 +40,7 @@ dependencies = [
 requires-python = ">=3.5"
 
 [project.urls]
+Homepage = "https://github.com/xenit-eu/contentgrid-assistant-api"
 Source = "https://github.com/xenit-eu/contentgrid-assistant-api"
 
 [tool.setuptools_scm]
