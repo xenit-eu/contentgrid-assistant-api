@@ -9,7 +9,7 @@ description = "FastAPI wrapper for contentgrid assistants"
 readme = "README.md"
 authors = [{ name = "Ranec Belpaire", email = "ranec.belpaire@xenit.eu" }]
 license = { file = "LICENSE" }
- 
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Operating System :: OS Independent",
@@ -38,6 +38,9 @@ dependencies = [
 ]
 
 requires-python = ">=3.5"
+
+[project.urls]
+Source = "https://github.com/xenit-eu/contentgrid-assistant-api"
 
 [tool.setuptools_scm]
 write_to = "_version.txt"
