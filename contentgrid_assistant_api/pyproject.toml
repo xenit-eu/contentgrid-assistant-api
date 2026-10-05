@@ -33,7 +33,7 @@ dependencies = [
     "sqlalchemy >= 2.0.45",
     "psycopg[binary] >= 3.3.2",
     "contentgrid_extension_helpers >= 0.0.3",
-    "sqlmodel >= 0.0.31",
+    "sqlmodel >= 0.0.31, < 0.0.45",
     "python-multipart >= 0.0.21",
 ]
 
