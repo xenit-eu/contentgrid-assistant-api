@@ -41,4 +41,4 @@ jobs:
     - name: Run tests
       env:
         USE_SQLITE_DB: t
-      run: python -m pytest
+      run: python -m pytest ${{ matrix.libs.name }}
