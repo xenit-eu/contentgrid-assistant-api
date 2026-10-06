@@ -9,7 +9,7 @@ description = "FastAPI wrapper for contentgrid assistants"
 readme = "README.md"
 authors = [{ name = "Ranec Belpaire", email = "ranec.belpaire@xenit.eu" }]
 license = { file = "LICENSE" }
- 
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Operating System :: OS Independent",
@@ -33,11 +33,15 @@ dependencies = [
     "sqlalchemy >= 2.0.45",
     "psycopg[binary] >= 3.3.2",
     "contentgrid_extension_helpers >= 0.0.3",
-    "sqlmodel >= 0.0.31",
+    "sqlmodel >= 0.0.31, < 0.0.45",
     "python-multipart >= 0.0.21",
 ]
 
 requires-python = ">=3.5"
+
+[project.urls]
+Homepage = "https://github.com/xenit-eu/contentgrid-assistant-api"
+Source = "https://github.com/xenit-eu/contentgrid-assistant-api"
 
 [tool.setuptools_scm]
 write_to = "_version.txt"
