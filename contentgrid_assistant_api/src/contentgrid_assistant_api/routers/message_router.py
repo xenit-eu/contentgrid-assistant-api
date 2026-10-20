@@ -18,7 +18,7 @@ from contentgrid_assistant_api.dependencies import DependencyResolver
 from contentgrid_extension_helpers.authentication import ContentGridUser
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from contentgrid_extension_helpers.responses.hal import FastAPIHALCollection, HALTemplateFor, HALLinkFor
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, BaseMessage, ToolMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, AIMessageChunk, BaseMessage, ToolMessage
 from fastapi import HTTPException
 
 # ContentBlocks
@@ -184,14 +184,15 @@ def generate_agent_message_router(
                     "recursion_limit": extension_config.graph_recursion_limit,
                     **lf_config
                 }
-                for mode, chunk in agent.stream(
+                for chunk in agent.stream(
                     {"messages": messages},
                     stream_config,
                     context=thread_context,
-                    stream_mode=["values", "messages"]
+                    stream_mode=["values", "messages"],
+                    version="v2",
                 ):
-                    if mode=="values":
-                        values = chunk
+                    if chunk["type"] == "values":
+                        values = chunk["data"]
                         new_state_messages = values["messages"][current_message_index:]
                         hal_messages = [convert_to_hal_message(msg, thread_id) for msg in new_state_messages]
                         
@@ -207,12 +208,16 @@ def generate_agent_message_router(
                         yield "event: message\n"
                         yield f"data: {json.dumps(messages_data)}\n\n"
                         current_message_index += len(new_state_messages)
-                    elif mode == "messages":
-                        message_chunk, metadata = chunk
-                        if message_chunk.content:
+                    elif chunk["type"] == "messages":
+                        message_chunk, metadata = chunk["data"]
+                        # Only forward text tokens from the LLM; skip tool messages and tool call / reasoning chunks
+                        if not isinstance(message_chunk, AIMessageChunk):
+                            continue
+                        text = message_chunk.text
+                        if text:
                             try:
                                 yield "event: token\n"
-                                yield f"data: {json.dumps(message_chunk.content)}\n"
+                                yield f"data: {json.dumps(text)}\n"
                                 yield f"id: {message_chunk.id}\n\n"
                             except Exception as e:
                                 logging.exception(e)
